@@ -25,12 +25,12 @@ class Car(object):
         self.model = model
         self.year = year
 
-    def shift(self, to):
-        if to == 'D':
+    def shift_to(self, gear):
+        if gear == 'D':
             self.direction = 1
-        elif to == 'R':
+        elif gear == 'R':
             self.direction = -1
-        elif to == 'P':
+        elif gear == 'P':
             self.direction = 0
         else:
             raise BadShiftTo
@@ -47,9 +47,16 @@ class Car(object):
         print("Driving a {color} {year} {make} {model}! "
               "Wheee!".format(**self.__dict__))
         print('\n\n\n\n')
+        colorcode = { 'red': 41
+                    , 'green': 42
+                    , 'gray': 40
+                    , 'yellow': 43
+                    , 'blue': 46
+                     }[self.color]
         while 1:
             self.position = self.position + (self.magnitude * self.direction)
-            output = (' ' * self.position) + '*\r'
+            output = (' ' * self.position)
+            output += '\033[{};1m \033[39;49m\r'.format(colorcode)
             print(output, end='')
             sys.stdout.flush()
             time.sleep(1)
@@ -59,4 +66,6 @@ seths_car = Car('gray', 'Hyundai', 'Elantra', 2010)
 leahs_car = Car('green', 'Jeep', 'Wrangler', 2015)
 sams_car = Car('orange', 'Hummer', 'H2', 2015)
 
+leahs_car.shift_to('D')
+leahs_car.hit_gas()
 leahs_car.drive()
