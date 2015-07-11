@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import curses
 import time
 import threading
+from math import pi, sin
 
 
 def double(val):
@@ -17,10 +18,10 @@ class BadColor(Exception): pass
 
 class Car(object):
 
-    scr = None
-    position = (None, None)  # (y, x)
-    speed = 0
-    direction = 90  # degrees, with zero at the top
+    scr = None              # a curses screen object
+    position = (None, None) # (y, x)
+    speed = None            # magnitude as float; 0.0 is stopped
+    direction = None        # radians as float, with 0.0 at the top of the screen
 
     def __init__(self, color, make, model, year):
         if color not in COLORS:
@@ -30,8 +31,11 @@ class Car(object):
         self.make = make
         self.model = model
         self.year = year
-        self.ymax, self.xmax = self.scr.getmaxyx()
-        self.position = (self.ymax // 2, self.xmax // 10)  # start at left middle
+        ymax, xmax = self.scr.getmaxyx()
+
+        self.position = (ymax // 2, xmax // 10) # Start at left middle,
+        self.direction = 90.0                   # facing right,
+        self.speed = 0.0                        # standing still.
 
     def hit_gas(self):
         if self.speed < 100:
@@ -51,7 +55,12 @@ class Car(object):
         self.direction = newdirection
 
     def start(self):
-        t = threading.Thread(target=self._start)
+        self.scr.move(self.ymax-1, 0)
+        self.scr.addstr("Driving a ")
+        self.scr.addstr(self.color, self._color)
+        self.scr.addstr(" {year} {make} {model}! Wheee!".format(**self.__dict__))
+
+        t = threading.Thread(target=self.redraw_loop)
         t.daemon = True
         t.start()
 
@@ -70,25 +79,33 @@ class Car(object):
 
     @staticmethod
     def get_new_position(y, x, speed, direction):
-        y += speed * direction
-        x += speed * direction
+
+        C = pi/2
+        B = direction % pi/2    # adjust for quadrant
+        A = pi - C - B
+
+        c = speed
+        b = (c * sin(B)) / sin(C)
+        a = (c * sin(A)) / sin(A)
+
+        y = a
+        x = b
+
+        if 0 < direction <
+        if pi/2 < direction < pi:
+            y =
+
         return y, x
 
-    def _start(self):
-        self.scr.move(self.ymax-1, 0)
-        self.scr.addstr("Driving a ")
-        self.scr.addstr(self.color, self._color)
-        self.scr.addstr(" {year} {make} {model}! Wheee!".format(**self.__dict__))
-
+    def redraw_loop(self):
         while 1:
-            # Redraw the car.
             y, x = self.position
             self.scr.delch(y, x)
             y, x = self.get_new_position(y, x, self.speed, self.direction)
-            self.scr.addstr(y, x, '#', self._color)
+            self.scr.addstr(int(round(y)), int(round(x)), '#', self._color)
             self.scr.refresh()
             self.position = (y, x)
-            time.sleep(0.5)
+            time.sleep(0.1)
 
 
 def main(stdscr):
