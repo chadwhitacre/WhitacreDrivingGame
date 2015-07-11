@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import curses
 import time
+import threading
 
 
 def double(val):
@@ -40,22 +41,20 @@ class Car(object):
         if self.speed > 0:
             self.speed += -1
 
-    def steer(self):
+    def steer(self, direction):
+        assert direction in (-1, 1)  # left, right
         raise NotImplementedError
 
-    def drive(self):
+    def start(self):
+        t = threading.Thread(target=self._start)
+        t.daemon = True
+        t.start()
 
+    def _start(self):
         self.scr.move(self.ymax-1, 0)
         self.scr.addstr("Driving a ")
         self.scr.addstr(self.color, self._color)
         self.scr.addstr(" {year} {make} {model}! Wheee!".format(**self.__dict__))
-
-        #colorcode = { 'red': 41
-        #            , 'green': 42
-        #            , 'gray': 40
-        #            , 'yellow': 43
-        #            , 'blue': 46
-        #             }[self.color]
 
         while 1:
             # Redraw the car.
@@ -89,8 +88,13 @@ def main(stdscr):
     leahs_car = Car('green', 'Jeep', 'Wrangler', 2015)
     sams_car = Car('yellow', 'Hummer', 'H2', 2015)
 
+    leahs_car.start()
+
+    time.sleep(3)
     leahs_car.hit_gas()
-    leahs_car.drive()
+
+    while 1:
+        time.sleep(0.5)
 
 
 def ctrl_c_wrapper(stdscr):
