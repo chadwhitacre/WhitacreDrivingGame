@@ -15,6 +15,8 @@ def half(val):
 COLORS = 'blue cyan green magenta red white yellow'.split()
 class BadColor(Exception): pass
 
+fix = lambda v: int(round(v))
+
 
 class Car(object):
 
@@ -31,10 +33,10 @@ class Car(object):
         self.make = make
         self.model = model
         self.year = year
-        ymax, xmax = self.scr.getmaxyx()
 
+        ymax, xmax = self.scr.getmaxyx()
         self.position = (ymax // 2, xmax // 10) # Start at left middle,
-        self.direction = 90.0                   # facing right,
+        self.direction = pi/2                   # facing right,
         self.speed = 0.0                        # standing still.
 
     def hit_gas(self):
@@ -47,15 +49,15 @@ class Car(object):
 
     def steer(self, direction):
         assert direction in ('left', 'right')
-        newdirection = direction + {'left': -1, 'right': 1}[direction]
-        if newdirection == 360:
-            newdirection = 0
-        elif newdirection == -1:
-            newdirection = 359
+        newdirection = self.direction + {'left': -pi/8, 'right': pi/8}[direction]
+        if newdirection >= 2*pi:
+            newdirection -= 2*pi
+        elif newdirection < 0:
+            newdirection += 2*pi
         self.direction = newdirection
 
     def start(self):
-        self.scr.move(self.ymax-1, 0)
+        self.scr.move(self.scr.getmaxyx()[0]-1, 0)
         self.scr.addstr("Driving a ")
         self.scr.addstr(self.color, self._color)
         self.scr.addstr(" {year} {make} {model}! Wheee!".format(**self.__dict__))
@@ -88,21 +90,27 @@ class Car(object):
         b = (c * sin(B)) / sin(C)
         a = (c * sin(A)) / sin(A)
 
-        y = a
-        x = b
-
-        if 0 < direction <
-        if pi/2 < direction < pi:
-            y =
+        if 0 < direction <= pi/2:
+            y = a
+            x = b
+        elif pi/2 < direction <= pi:
+            y = -a
+            x = b
+        elif pi < direction <= (3*pi)/2:
+            y = -a
+            x = -b
+        elif (3*pi)/2 < direction <= 2*pi:
+            y = a
+            x = -b
 
         return y, x
 
     def redraw_loop(self):
         while 1:
             y, x = self.position
-            self.scr.delch(y, x)
+            self.scr.delch(fix(y), fix(x))
             y, x = self.get_new_position(y, x, self.speed, self.direction)
-            self.scr.addstr(int(round(y)), int(round(x)), '#', self._color)
+            self.scr.addstr(fix(y), fix(x), '#', self._color)
             self.scr.refresh()
             self.position = (y, x)
             time.sleep(0.1)
