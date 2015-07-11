@@ -20,7 +20,7 @@ class Car(object):
     scr = None
     position = (None, None)  # (y, x)
     speed = 0
-    direction = (0, 1)
+    direction = 90  # degrees, with zero at the top
 
     def __init__(self, color, make, model, year):
         if color not in COLORS:
@@ -42,8 +42,13 @@ class Car(object):
             self.speed += -1
 
     def steer(self, direction):
-        assert direction in (-1, 1)  # left, right
-        raise NotImplementedError
+        assert direction in ('left', 'right')
+        newdirection = direction + {'left': -1, 'right': 1}[direction]
+        if newdirection == 360:
+            newdirection = 0
+        elif newdirection == -1:
+            newdirection = 359
+        self.direction = newdirection
 
     def start(self):
         t = threading.Thread(target=self._start)
@@ -56,6 +61,18 @@ class Car(object):
                 self.hit_brake()
             elif c == curses.KEY_UP:
                 self.hit_gas()
+            elif c == curses.KEY_LEFT:
+                self.steer('left')
+            elif c == curses.KEY_RIGHT:
+                self.steer('right')
+            elif c == ord('q'):
+                raise SystemExit
+
+    @staticmethod
+    def get_new_position(y, x, speed, direction):
+        y += speed * direction
+        x += speed * direction
+        return y, x
 
     def _start(self):
         self.scr.move(self.ymax-1, 0)
@@ -67,8 +84,7 @@ class Car(object):
             # Redraw the car.
             y, x = self.position
             self.scr.delch(y, x)
-            y += self.speed * self.direction[0]
-            x += self.speed * self.direction[1]
+            y, x = self.get_new_position(y, x, self.speed, self.direction)
             self.scr.addstr(y, x, '#', self._color)
             self.scr.refresh()
             self.position = (y, x)
@@ -101,7 +117,7 @@ def main(stdscr):
 def ctrl_c_wrapper(stdscr):
     try:
         main(stdscr)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         stdscr.clear()
         y, x = stdscr.getmaxyx()
         stdscr.move(y//2, (x//2)-2)
