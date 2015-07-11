@@ -50,6 +50,13 @@ class Car(object):
         t.daemon = True
         t.start()
 
+        while 1:
+            c = self.scr.getch()
+            if c == curses.KEY_DOWN:
+                self.hit_brake()
+            elif c == curses.KEY_UP:
+                self.hit_gas()
+
     def _start(self):
         self.scr.move(self.ymax-1, 0)
         self.scr.addstr("Driving a ")
@@ -89,12 +96,6 @@ def main(stdscr):
     sams_car = Car('yellow', 'Hummer', 'H2', 2015)
 
     leahs_car.start()
-
-    time.sleep(3)
-    leahs_car.hit_gas()
-
-    while 1:
-        time.sleep(0.5)
 
 
 def ctrl_c_wrapper(stdscr):
