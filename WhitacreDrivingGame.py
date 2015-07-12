@@ -1,10 +1,13 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import curses
+import locale
 import time
 import threading
 from math import pi, sin
 
+locale.setlocale(locale.LC_ALL,"")
+encoding = locale.getpreferredencoding()
 
 def double(val):
     return val * 2
@@ -57,6 +60,7 @@ class Car(object):
     def steer(self, direction):
         assert direction in ('left', 'right')
         newdirection = self.direction + {'left': -pi/2, 'right': pi/2}[direction]
+
         if newdirection >= 2*pi:
             newdirection -= 2*pi
         elif newdirection < 0:
@@ -66,7 +70,7 @@ class Car(object):
                     , pi/2:     '>'
                     , pi:       'v'
                     , (3*pi)/2: '<'
-                     }[newdirection]
+                     }.get(newdirection, '\u2306'.encode(encoding))
 
         self.direction = newdirection
 
@@ -140,6 +144,7 @@ class Car(object):
             # Redraw speedometer.
             Y, X = self.scr.getmaxyx()
             self.scr.addstr(Y-1, X-20, 'Speed: {: >3d}'.format(int(self.speed * 10)))
+            self.scr.addstr(Y-1, X-40, 'Direction: {: >.2f}'.format(self.direction))
 
             self.scr.refresh()
             time.sleep(0.1)
