@@ -24,6 +24,7 @@ class Car(object):
     position = (None, None) # (y, x)
     speed = None            # magnitude as float; 0.0 is stopped
     direction = None        # radians as float, with 0.0 at the top of the screen
+    char = None             # indicates direction: < ^ > v
 
     def __init__(self, color, make, model, year):
         if color not in COLORS:
@@ -37,24 +38,38 @@ class Car(object):
         ymax, xmax = self.scr.getmaxyx()
         self.position = (ymax // 2, xmax // 10) # Start at left middle,
         self.direction = pi/2                   # facing right,
+        self.char = '>'
         self.speed = 0.0                        # standing still.
 
+        self._log = open('log', 'w+', buffering=0)
+
+    def log(self, *a, **kw):
+        kw.setdefault('file', self._log)
+        print(*a, **kw)
+
+
     def hit_gas(self):
-        if self.speed < 100:
-            self.speed += 1
+        self.speed = min(self.speed + 0.1, 10)
 
     def hit_brake(self):
-        if self.speed > 0:
-            self.speed += -1
+        self.speed = max(self.speed - 0.1, 0)
 
     def steer(self, direction):
         assert direction in ('left', 'right')
-        newdirection = self.direction + {'left': -pi/8, 'right': pi/8}[direction]
+        newdirection = self.direction + {'left': -pi/2, 'right': pi/2}[direction]
         if newdirection >= 2*pi:
             newdirection -= 2*pi
         elif newdirection < 0:
             newdirection += 2*pi
+
+        self.char = { 0.0:      '^'
+                    , pi/2:     '>'
+                    , pi:       'v'
+                    , (3*pi)/2: '<'
+                     }[newdirection]
+
         self.direction = newdirection
+
 
     def start(self):
         self.scr.move(self.scr.getmaxyx()[0]-1, 0)
@@ -79,40 +94,54 @@ class Car(object):
             elif c == ord('q'):
                 raise SystemExit
 
-    @staticmethod
-    def get_new_position(y, x, speed, direction):
+
+    def get_new_position(self, y, x, speed, direction):
 
         C = pi/2
-        B = direction % pi/2    # adjust for quadrant
+        B = direction % (pi/2)  # adjust for quadrant
         A = pi - C - B
 
         c = speed
         b = (c * sin(B)) / sin(C)
         a = (c * sin(A)) / sin(A)
 
-        if 0 < direction <= pi/2:
-            y = a
-            x = b
-        elif pi/2 < direction <= pi:
-            y = -a
-            x = b
-        elif pi < direction <= (3*pi)/2:
-            y = -a
-            x = -b
-        elif (3*pi)/2 < direction <= 2*pi:
-            y = a
-            x = -b
+        if 0 <= direction < pi/2:
+            y -= a
+            x += b
+        elif pi/2 <= direction < pi:
+            y += b
+            x += a
+        elif pi <= direction < (3*pi)/2:
+            y += a
+            x -= b
+        else:
+            assert (3*pi)/2 <= direction <= 2*pi
+            y -= b
+            x -= a
+
+        Y, X = self.scr.getmaxyx()
+        if y < 0:       y = Y-2
+        elif y >= Y-2:  y = 0
+        if x < 0:       x = X-1
+        elif x >= X-1:  x = 0
 
         return y, x
 
+
     def redraw_loop(self):
         while 1:
+            # Redraw car.
             y, x = self.position
             self.scr.delch(fix(y), fix(x))
             y, x = self.get_new_position(y, x, self.speed, self.direction)
-            self.scr.addstr(fix(y), fix(x), '#', self._color)
-            self.scr.refresh()
+            self.scr.addstr(fix(y), fix(x), self.char, self._color)
             self.position = (y, x)
+
+            # Redraw speedometer.
+            Y, X = self.scr.getmaxyx()
+            self.scr.addstr(Y-1, X-20, 'Speed: {: >3d}'.format(int(self.speed * 10)))
+
+            self.scr.refresh()
             time.sleep(0.1)
 
 
