@@ -87,13 +87,13 @@ class Car(object):
 
         while 1:
             c = self.scr.getch()
-            if c == curses.KEY_DOWN:
-                self.hit_brake()
-            elif c == curses.KEY_UP:
+            if c == ord('k'):
                 self.hit_gas()
-            elif c == curses.KEY_LEFT:
+            elif c == ord('j'):
+                self.hit_brake()
+            elif c == ord('d'):
                 self.steer('left')
-            elif c == curses.KEY_RIGHT:
+            elif c == ord('f'):
                 self.steer('right')
             elif c == ord('q'):
                 raise SystemExit
